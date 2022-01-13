@@ -6,51 +6,51 @@
 
 == Hello Mutiny!
 
-Once you made Mutiny available to your classpath, you can start writing code.
-Let's start with this simple program:
+一旦Mutiny在您的类路径下，您就可以开始编码了
+来让我们看一个简单的例子
 
 [source, java, indent=0]
 ----
 include::{include_dir}/FirstProgram.java[]
 ----
 
-This program prints:
+这个程序将打印出来：
 
 [source, text]
 ----
 >> HELLO MUTINY
 ---- 
 
-== Dissecting the pipeline
+== 剖析管道
 
-What's interesting is how this message is _built_.
-We described a processing pipeline taking an item, processing it and finally consuming it. 
+有趣的是这个信息是如何被 _构建_ 的
+我们描述了一个处理的管道，先获取一个信息，然后处理它，最后消费它
 
-First, we create a `Uni`, one of the two types with `Multi` that Mutiny provides.
-A `Uni` is a stream emitting either a single item or a failure.
+首先，我们创建了一个 `Uni`,它和 `Multi` 是Mutiny提供的两种类型。
+`Uni` 是一个产出单个元素或者产出一个异常的流
 
-Here, we create a `Uni` emitting the `"hello"` item.
-This is the input of our pipeline.
-Then we process this item:
+在这里，我们创建一个产出 "hello" 元素的 `Uni`
+这是我们管道的输入。
+然后我们处理这个元素
 
-. we append `" mutiny"`, then 
-. we make it an uppercase string.
+. 我们在后面追加 `"mutiny"` ，然后
+. 我们它转换为大写的字符串。
 
-This forms the processing part of our pipeline, and then we finally **subscribe** to the pipeline.
+这些组成了管道的处理部分，然后我们最终 **订阅** 了这个管道
 
-This last part is essential.
-If you don't have a final subscriber, nothing is going to happen.
-Mutiny types are lazy, meaning that you need to express your interest.
-If you don't the computation won't even start.
+最后一部分非常重要。
+如果您最终不订阅这个管道，那么什么事情都不会发生。
+Mutiny类型是惰性的，这就意味着您需要订阅感兴趣的事件。
+如果您不这样做，这种计算甚至并不会开始。
 
-IMPORTANT: If your program doesn't do anything, verify that you didn't forget to subscribe!
+IMPORTANT: 如果您发现程序并没有做任何事情，请确认您并没有忘记订阅！
 
-== Mutiny uses a builder API!
+== 利用建造者API使用Mutiny
 
-Another important aspect is the pipeline construction.
-Appending a new _stage_ to a pipeline returns a new `Uni.`
+另一个重要的方面是构建管道
+将一个新的 _阶段_ 追加到管道上时，会返回一个新的 `Uni`.
 
-The previous program is equivalent to:
+之前的代码相当于：
 
 [source, java, indent=0]
 ----
@@ -58,6 +58,7 @@ include::{include_dir}/FirstProgramTest.java[tag=uni]
 ----
 
 It is fundamental to understand that this program is not equivalent to:
+必须注意的是，本代码不等同于：
 
 [source, java, indent=0]
 ----
@@ -65,5 +66,6 @@ include::{include_dir}/FirstProgramTest.java[tag=uni2]
 ----
 
 This program just prints `">> hello"``, as it does not use the appended stages and the final subscriber consumes the first `Uni.`
+这个代码只会输出 `">>hello"` ，因为它并不附加新的阶段，所以最终订阅者使用第一个 `Uni`
 
-IMPORTANT: Mutiny APIs are not fluent and each computation stage returns a new object.
+IMPORTANT: Mutiny API并不是流式的，每个计算阶段都返回一个新对象。
