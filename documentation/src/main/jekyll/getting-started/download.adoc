@@ -3,9 +3,9 @@
 :page-liquid: 
 
 [[dependency]]
-== Using Mutiny in a Java application
+== 在Java应用中使用Mutiny
 
-Add the _dependency_ to your project:
+在您的项目的 _依赖_ 中添加如下内容
 
 .https://maven.apache.org/[Maven]
 [source, xml]
@@ -36,17 +36,17 @@ implementation("io.smallrye.reactive:mutiny:{{ site.data.versions.mutiny_version
 ----
 
 [[quarkus]]
-=== Using Mutiny with Quarkus
+=== 与Quarkus搭配使用Mutiny
 
-Most of the https://quarkus.io[Quarkus] extensions with reactive capabilities already depend on Mutiny.
-You can also add the `quarkus-mutiny` dependency explicitly:
+大部分具有响应式特性的  https://quarkus.io[Quarkus] 拓展都已经依赖了Mutiny
+您也可以直接添加 `quarkus-mutiny` 依赖
 
 [source, bash]
 ----
 mvn quarkus:add-extension -Dextensions=mutiny
 ----
 
-Or directly add the dependency to your `pom.xml`
+或者直接在您的 `pom.xml` 添加以下依赖
 
 [source, xml]
 ----
@@ -56,15 +56,15 @@ Or directly add the dependency to your `pom.xml`
 </dependency>
 ----
 
-Follow the https://quarkus.io/guides/getting-started-reactive[Getting started with reactive] guide for more details.
+请查阅 https://quarkus.io/guides/getting-started-reactive[Getting started with reactive] 指南以获取更多信息
 
 
 [[bom]]
-=== Using the Mutiny BOM
+=== 使用Mutiny BOM
 
-Mutiny provides a https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html#bill-of-materials-bom-poms[BOM] to avoid having to declare the version of each module you depend on.
+Mutiny提供了一个 https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html#bill-of-materials-bom-poms[BOM] 来帮助您统一依赖版本
 
-In Maven, use it as follows:
+在Maven中，可以如下使用：
 
 [source, xml]
 ----
@@ -88,7 +88,7 @@ In Maven, use it as follows:
 </dependencies>
 ----
 
-In Gradle, add:
+Gradle则需要添加这些：
 
 [source, kotlin]
 ----
@@ -99,11 +99,11 @@ dependencies {
 ----
 
 [[vertx]]
-== Using Mutiny with Eclipse Vert.x
+== 与Eclipse Vert.x搭配使用Mutiny
 
-API bindings for many popular modules and clients from the https://vertx.io[Vert.x] stack are available from the https://smallrye.io/smallrye-mutiny-vertx-bindings[Smallrye Mutiny Vert.x Bindings project].
+利用 https://smallrye.io/smallrye-mutiny-vertx-bindings[Smallrye Mutiny Vert.x Bindings project] 这个项目我们将 https://vertx.io[Vert.x]技术栈中的许多常用的模块和客户端做了API的绑定
 
-Here is how to add a dependency to the Vert.x core library with Mutiny bindings:
+这是是将Mutiny版Vert.x core库添加到依赖的方法 
 
 [source, xml]
 ----
@@ -114,10 +114,9 @@ Here is how to add a dependency to the Vert.x core library with Mutiny bindings:
 </dependency>
 ----
 
-See https://smallrye.io/smallrye-mutiny-vertx-bindings[https://smallrye.io/smallrye-mutiny-vertx-bindings] for the complete documentation and instructions.
-
+您可以通过 https://smallrye.io/smallrye-mutiny-vertx-bindings[https://smallrye.io/smallrye-mutiny-vertx-bindings] 获取到完整的说明书和文档
 
 [[download]]
-== Direct Download
+== 直接下载
 
-You can also download the Mutiny JARs directly from https://search.maven.org/search?q=g:io.smallrye.reactive%20AND%20a:mutiny*%20AND%20v:{{ site.data.versions.mutiny_version }}[Maven Central].
+您也可以直接从 https://search.maven.org/search?q=g:io.smallrye.reactive%20AND%20a:mutiny*%20AND%20v:{{ site.data.versions.mutiny_version }}[Maven Central] 中下载到Mutiny的jar包
