@@ -3,84 +3,85 @@
 :page-liquid:
 :include_dir: ../../../../src/test/java/guides
 
-Mutiny provides several operators to handle failures.
+Mutiny提供了几个操作符来处理失败的情况
 
-Remember, failures are terminal events sent by the observed stream, indicating that something _bad_ happened. 
-After a failure, no more items are being received.
+记住，失败是由观察到的流发送的终结事件，表示发生了 _坏事_ 。
+失败后，将不再接收到任何元素。
 
-When such an event is received, you can:
+当一个失败事件被接收时，您可以：
 
-* propagate the failure downstream (default), or
-* transform the failure into another failure, or
-* recover from it by switching to another stream, passing a fallback item, or completing, or
-* retrying (covered in the next guide)
+* 向下游传播这个事件(这是默认行为)，或者
+* 将这个异常转换为另一类型的异常, 或者
+* 通过切换到另一个流的方式，或者传递一个回退元素到下游，或者直接结束来从失败中恢复，或者
+* 重试 (这将在下一篇指南中介绍)
 
-If you don't handle the failure event, it is propagated downstream until a stage handles the failure or reaches the final subscriber.
+如果您不处理失败事件，它将传播到下游，直到某个阶段来处理失败，或者直接到达终端的订阅者
 
-IMPORTANT: on `Multi`, a failure cancels the subscription, meaning you will not receive any more items.
-The `retry` operator lets you re-subscribe and continue the reception.
+IMPORTANT: 对于 `Mutiny` 一个失败会导致取消订阅 , 这意味着您将不再接收到任何元素。
+`retry` 操作符允许您重新进行订阅并且继续接收元素。
 
-== Observing failures
+== 观测失败
 
-It can be useful to execute some custom action when a failure happens. 
-For example, you can log the failure:
+当产生一个失败时，执行一些自定义操作可能很有用。例如，您可以记录故障：
+举个例子，您可以记录这个失败：
 
 [source, java, indent=0]
 ----
 include::{include_dir}/HandlingFailuresTest.java[tag=invoke]
 ----
 
-TIP: You can also execute an asynchronous action using `onFailure().call(Function<Throwable, Uni<?>)`.
-The received failure will be propagated downstream when the `Uni` produced by the passed function emits its item.
+TIP: 您还可以使用 `onFailure().call(Function<Throwable, Uni<?>)` 执行异步操作。
+当传递的函数返回的 `Uni` 产生元素时，之前接收到的异常将向下游传播。
 
-== Transforming failures
+== 转换失败类型
 
-Another useful action on failure is to transform the failure into a _more meaningful_ failure.
-
-Typically, you can wrap a low-level failure (like an `IOException`) into a business failure (`ServiceUnavailableException`):
+另一个对失败有用的操作是将失败转化为 _更有意义_ 的失败。
+一般来说，您可以将低层的异常（比如 `IOException` ）转为业务异常（`ServiceUnavailableException` ）：
 
 [source, java, indent=0]
 ----
 include::{include_dir}/HandlingFailuresTest.java[tag=transform]
 ----
 
-== Recovering using fallback item(s)
+== 使用回退元素从失败中恢复
 
-In general, upon failure, you want to recover. 
-The first approach is to recover by replacing the failure with an item:
+通常情况下，您希望从失败中恢复。
+第一种方法时通过使用一个元素来替换来从失败中恢复：
 
 [source, java, indent=0]
 ----
 include::{include_dir}/HandlingFailuresTest.java[tag=recover-item]
 ----
 
-The second approach receives a `Supplier` to compute the fallback item.
-For the downstream, it didn't fail; it gets the fallback item instead.
+第二种方式是通过接收一个 `Supplier` 对象来计算获得到回退元素。
+对于下游来说，它不会失败而是获取到这个回退元素
 
-However, don't forget that failures are terminal!
-So for `Multi`, the downstream receives the fallback item followed by the completion signal, as no more items can be produced.
+然而，请不要忘记失败代表了结束！
+所以，对于 `Multi`，下游会接收到回退元素，然后接收到流结束的信号，因为（上游）无法产生更多的元素了
 
-== Completing on failure
+== 失败时结束
 
-When observing a `Multi` you can replace the failure with the completion signal:
+当观测一个 `Multi` 时，您可以将失败替换为流结束的信号
 
 [source, java, indent=0]
 ----
 include::{include_dir}/HandlingFailuresTest.java[tag=recover-completion]
 ----
 
-The downstream won't see the failure, just the completion event.
+下游将不会看到这个失败，只能看到一个结束的信号
 
-== Switching to another stream
+== 切换到另一个流
 
 On failure, you may want to switch to an alternate stream.
 When the failure is received, it subscribes to this other stream and propagates the items from this stream instead:
+当失败时，您可能想要切换到另一个代替的流。
+当收到一个失败时，它将订阅另一个流并且传播从这个流产生的元素到下游
 
 [source, java, indent=0]
 ----
 include::{include_dir}/HandlingFailuresTest.java[tag=recover-switch]
 ----
+`recoverWithUni` 和 `recoverWithMulti` 方法用给定的流替换已经失败的流
 
-The `recoverWithUni` and `recoverWithMulti` methods replace the failed upstream with the returned stream.
+这个回退的流产生的事件类型必须和原来上游产生的类型一致
 
-The fallback streams must produce the same type of event as the original upstream.
