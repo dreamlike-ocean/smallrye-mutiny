@@ -65,7 +65,6 @@ It is fundamental to understand that this program is not equivalent to:
 include::{include_dir}/FirstProgramTest.java[tag=uni2]
 ----
 
-This program just prints `">> hello"``, as it does not use the appended stages and the final subscriber consumes the first `Uni.`
 这个代码只会输出 `">>hello"` ，因为它并不附加新的阶段，所以最终订阅者使用第一个 `Uni`
 
 IMPORTANT: Mutiny API并不是流式的，每个计算阶段都返回一个新对象。
