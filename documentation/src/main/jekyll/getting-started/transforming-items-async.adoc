@@ -3,55 +3,55 @@
 :page-liquid:
 :include_dir: ../../../../src/test/java/guides
 
-The previous examples illustrated how to transform each item from a stream into another item. 
-Yet, there are cases where we need to go beyond this, for example:
+前面的示例演示了如何将一个流中的每一个元素转换为另一种元素。
+然而，有些情况下我们需要做点和这这种不一样的操作，例如：
 
-* Transforming an item into a `Uni` - any asynchronous processing such as calling a remote service, interacting with a database, etc
-* Transforming an item into a `Multi` - producing a multi-items stream based on the incoming item, filtering out items, etc
+* 将一个元素转为 `Uni` - 任何异步处理，如调用远程服务、与数据库交互等
+* 将一个元素转为 `Multi` - 基于传入的元素产生一个多元素的流，过滤出元素等
 
-Having the possibility to transform an item into a stream gives us many opportunities. 
-To implement such transformations, we use `onItem().transformToUni(Function<T, Uni<O>>` and `onItem().transformToMulti(Function<T, Multi<O>>)`
+可以将一个元素转换为流会给我们带来很多选择。
+为了实现这些转换操作，我们可以使用 `onItem().transformToUni(Function<T, Uni<O>>` 和 `onItem().transformToMulti(Function<T, Multi<O>>)`
 
 [role=reduce]
 image::transform-to-uni.png[Transforming items into Uni]
 
-== Uni - Transforming an item into a Uni
+== Uni - 将一个元素转化为一个Uni
 
-Imagine you have a `Uni<String>`, and you want to call a remote service.
+想象一下您有一个 `Uni<String>` ,并且您想要调用一个远端服务
 
-Calling a remote service is an asynchronous action represented by a `Uni`, as in:
+调用一个远端服务是由 `Uni` 代表的一个异步操作，像这样：
 
 [source, java, indent=0]
 ----
 include::{include_dir}/TransformItemsAsyncTest.java[tag=service]
 ----
 
-To call this service, you need to transform the item received from the first `Uni` into the `Uni` returned by the service:
+为了调用这个服务，您需要将从第一个 `Uni` 中获取到的元素转换为这个服务返回的 `Uni`
 
 [source, java, indent=0]
 ----
 include::{include_dir}/TransformItemsAsyncTest.java[tag=call]
 ----
 
-This snippet _chains_ the first `Uni` with another one. 
-The returned `Uni` (`result`) emits the result from the remote service or a failure if anything wrong happened:
+此代码段将第一个 `Uni` 与另一个 _链接_ 起来。
+返回的`Uni`（`result`）将发射从远程服务获取的结果，或者在发生任何错误时发射失败事件：
 
 [source, java, indent=0]
 ----
 include::{include_dir}/TransformItemsAsyncTest.java[tag=chain]
 ----
 
-== Uni - Transforming an item into a Multi
+== Uni - 将元素转化为Multi
 
-The previous example produced a single item.
-You may want to transform the received item into a stream which is... a `Multi`!
+前面的例子会产生一个元素。
+您可能想要把接收到的元素转换为一个用 `Multi` 代表的流
 
 [source, java, indent=0]
 ----
 include::{include_dir}/TransformItemsAsyncTest.java[tag=uni-to-multi]
 ----
 
-This code creates a stream of two elements, duplicating the received item. 
+这个例子创建了一个具有两个元素的流，其会复制接受到的两个元素
 
 [source, java, indent=0]
 ----
@@ -61,41 +61,43 @@ include::{include_dir}/TransformItemsAsyncTest.java[tag=uni-to-multi-2]
 [role=reduce]
 image::uni-transform-to-multi.png[Transforming item into a Multi]
 
-The produced `Multi` objects can of course be more complicated than that and emit items in an asynchronous fashion.
+产生的 `Multi` 对象可能比这更加复杂，而且会异步地发射元素
 
-== Transforming items from Multi - the _merge_ vs _concatenate_ dilemma
+== 转换Multi中的元素 -  _合并_ vs _串联_ 的困境
 
-When transforming items emitted by an upstream `Multi,` we need to answer the following question: how are we going to _merge_ the produced items back?
+当转换从上游 `Multi` 发射的元素时，我们需要回答下面的问题：我们该如何 _合并_ 这些产生的元素。
 
-Let's take an example.
-Imagine a `Multi` emitting the `Cameron` and `Donna` items (in order), and you want to call the `invokeRemoteGreetingService` from above.
-It thus calls `invokeRemoteGreetingService("Cameron")` then `invokeRemoteGreetingService("Donna")`.
+让我们来举个例子。
+想象一个 `Multi` 发射 `Cameron` 和 `Donna` 元素（有序的），然后您想要调用上面提到的 `invokeRemoteGreetingService ` 方法。
+因此，它调用 `InvokerMoteGreetingService("Cameron")` ，然后调用 `invokeRemoteGreetingService("Donna")`。
 
-The service does not have a constant response time (because of network latency or the load), which means that responses can be interleaved. 
-Indeed, you may receive `"Hello Donna"` before `"Hello Cameron"`.
+服务没有固定的响应时间（因为网络延迟或负载），这意味着可能收到乱序的响应。
+事实上，您可能会在 `"Hello Donna"` 之前收到 `"Hello Cameron"` 。
 
-Now, how do you want to handle this case?
-Do you need to preserve the order and ensure that the downstream subscriber will always get `"Hello Cameron"` first, or do you accept interleaved responses?
+现在，您该怎么处理这种情况？
+您是否需要保持顺序然后确保下游订阅者总是先收到 `"Hello Cameron"` ，还是您可以接受乱序的响应？
 
-When transforming items from `Multi` into streams, you need to decide in which order the items emitted by the produced stream are going to be received by the downstream subscriber.
 Mutiny offers two possibilities:
+当将元素从 `Multi` 转换为流时，您需要确定下游订阅者将以何种顺序接收由生成的流发出的元素。
+Mutiny提供了两种可能：
 
-* _merge_ - it does not preserve the order and emits the items from the produced streams as they come,
-* _concatenate_ - it maintains and concatenates the streams produced for each item.
+* _合并（merge）_ 它不会保持顺序，并在产生的流中发射它们
+* _串联（concatenate）_ 它维护并串联为每个元素生成的流
 
-== Multi - Transforming an item into a Uni
+== Multi - 将元素转化为Uni
 
-To implement the scenario from the last section, you will use `onItem().transformToUniAndMerge` or `onItem().transformToUniAndConcatenate()` depending on your ordering choice:
+要实现上一节中的场景，您将使用 `onItem().transformToUniAndMerge` 或  `onItem().transformToUniAndConcatenate()` 。
+这取决于您对有序性的选择。
 
 [source, java, indent=0]
 ----
 include::{include_dir}/TransformItemsAsyncTest.java[tag=merge-concat]
 ----
 
-== Multi - Transforming an item into a Multi
+== Multi - 将元素转换为Multi
 
-`onItem().transformToMultiAndMerge` and `onItem().transformToMultiAndConcatenate` transform incoming items into `Multi` streams.
-The produced `Multi` objects are either _merged_ or _concatenated_:
+`onItem().transformToMultiAndMerge` 和 `onItem().transformToMultiAndConcatenate` 将产生的元素转换为 `Multi` 流.
+产生的 `Multi` 对象可以是 _合并_ 或者 _串联_ 的：
 
 [source, java, indent=0]
 ----
