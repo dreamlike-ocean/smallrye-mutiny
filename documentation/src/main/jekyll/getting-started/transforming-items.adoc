@@ -3,50 +3,48 @@
 :page-liquid:
 :include_dir: ../../../../src/test/java/guides
 
+`Units` 和 `Multis` 都会发射 _元素_。
+最常见的操作之一是使用同步的 1对 1函数转换这些元素
 
-Both `Unis` and `Multis` emit _items_.
-One of the most common operations you will do is transforming these items using a synchronous 1-to-1 function.
-
-To achieve this, you use `onItem().transform(Function<T, U>)`.
-It calls the passed function for each item and produces the result as an item which is propagaed downstream.
+为了达成这个目标，您可以使用 `onItem().transform(Function<T, U>)` 。
+它为每个元素调用传递的函数，并将结果作为一个新的元素向下游传播
 
 [role=reduce]
 image::transform-operator.png[Transforming items synchronously]
 
-== Transforming items produced by a Uni
+== 转换Uni产生的元素
 
-Let's imagine you have a `Uni<String>,` and you want to capitalize the received `String`.
-Implementing this transformation is done as follows:
+请想象一下，您拥有一个 `Uni<String>` ，且您想要把收到的 `String` 全部大写。
+实现此转换的步骤如下：
 
 [source, java, indent=0]
 ----
 include::{include_dir}/TransformItemsTest.java[tag=uni-transform]
 ----
 
-== Transforming items produced by a Multi
+== 转换Multi产生的元素
 
-The only difference for `Multi` is that the function is called for each item:
+对于 `Multi` 唯一的区别是：它会为每一个元素都调用一次函数
 
 [source, java, indent=0]
 ----
 include::{include_dir}/TransformItemsTest.java[tag=multi-transform]
 ----
 
-The produced items are passed to the downstream subscriber:
+生成的元素都会被传递到下游的订阅者
 
 [source, java, indent=0]
 ----
 include::{include_dir}/TransformItemsTest.java[tag=multi-transform-2]
 ----
 
-== What if the transformation failed?
+== 如果转换失败了怎么办
 
-If the transformation throws an exception, that exception is caught and passed to the downstream subscriber as a _failure_ event.
-It also means that the subscriber won't get further item after that failure.
+如果转换过程中抛出了异常，那么这个异常会被捕获且会以 _失败_ 事件的形式传递到下游订阅者
 
-== Chaining multiple transformations
+== 连接多个转换操作
 
-You can chain multiple transformations:
+您可以连接多个转换操作：
 
 [source, java, indent=0]
 ----
