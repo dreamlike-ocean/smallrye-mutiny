@@ -3,113 +3,112 @@
 :page-liquid:
 :include_dir: ../../../../src/test/java/guides
 
-== Events
+== 事件
 
-`Uni` and `Multi` emit _events_.
-Your code is going to observe and process these events.
+`Uni` 和 `Multi` 可以发射  _事件_.
+您的代码将观察并处理这些事件
 
-Most of the time, your code is only interested in item and failure events.
-But there are other kinds of events such as cancellation, request, completion, and so on:
+大部分情况，您的代码只对其中的元素和失败事件感兴趣。
+但是仍然存在一些其他的事件，比如取消，请求，完成等下列事件
 
 [cols="15,15,25,30", options="header", stripes=even]
 |===
-|Event |Uni / Multi | Direction | Note
+| 事件 | Uni / Multi | 方向 | 备注
 
-|**item** | Uni and Multi | upstream -> downstream | The upstream sent an item.
-|**failure** | Uni and Multi | upstream -> downstream | The upstream failed.
-|**completion** | Multi only | upstream -> downstream | The upstream completed.
+|**item** | Uni 和 Multi | upstream -> downstream | 上游发射一个元素.
+|**failure** | Uni 和 Multi | upstream -> downstream | 上游出现错误.
+|**completion** | Multi | upstream -> downstream | 上游结束.
 
-|**subscribe** | Uni and Multi | downstream -> upstream | A downstream subscriber is interested in the data.
-|**subscription** | Uni and Multi | upstream -> downstream | Event happening after a `subscribe` event to indicate that the upstream acknowledged the subscription.
-|**cancellation** | Uni and Multi | downstream -> upstream | A downstream subscriber does not want any more events.
-|**overflow** | Multi only | upstream -> downstream | The upstream has emitted more than the downstream can handle.
-|**request** | Multi only | downstream -> upstream | The downstream indicates its capacity to handle _n_ items.
+|**subscribe** | Uni 和 Multi | downstream -> upstream | 下游订阅者对数据感兴趣.
+|**subscription** | Uni 和 Multi | upstream -> downstream | 事件发生在 `subscribe` 事件之后，指示上游已确认订阅。
+|**cancellation** | Uni 和 Multi | downstream -> upstream | 下游订阅者不再想要更多的数据.
+|**overflow** | Multi  | upstream -> downstream | 上游发送了超过下游消费能力的数据.
+|**request** | Multi  | downstream -> upstream | 下游表示其可以处理 `n` 个元素.
 |===
 
-It’s not rare that you need to look at these various events to understand better what’s going on or implement specific side effects.
-For example, you may need to close a resource after a completion event or log a message on failure or cancellation.
+您需要查看这些不同的事件以更好地了解正在发生的事件或附加特定的副作用，这种情况并不罕见。
+举个例子，您可能需要在完成事件后关闭资源，或者在失败或取消时记录消息。
 
-For each kind of event, there is an associated group providing the methods to handle that specific event: `onItem()`, `onFailure()`, `onCompletion()` and so on.
-These groups provide two methods to _peek_ at the various events without impacting its distribution: `invoke(...)` and `call(...)`.
-It does not transform the received event; it notifies you that something happened and let you react.
-Once this _reaction_ completes, the event is propagated downstream or upstream depending on the direction of the event.
+对于每一种事件都提供了一组相关的方法来处理特定的事件: `onItem()` , `onFailure()`, `onCompletion()`，等。
+每一组都提供了两个方法来 _访问（peek）_ 各种事件，而不影响其的分发：`invoke(...)` 和 `call(...)`。
+它不会转换接收到的事件；它会通知您发生了什么事情，并让您处理。一旦该 _处理操作_ 完成，事件将根据事件的方向向下游或上游传播
 
-== The invoke method
+== invoke 方法
 
-The invoke method is synchronous and the passed callback does not return anything.
-Mutiny invokes the configured callback when the observed stream dispatches the event:
+invoke方法是同步的，且需要传入不返回任何值的回调
+Mutiny在被观测的流分派事件时调用配置的回调：
 
 [source, java, indent=0]
 ----
 include::{include_dir}/ObserveTest.java[tag=invoke]
 ----
 
-As said above, `invoke` is synchronous.
-Mutiny invokes the callback and propagates the event downstream when the callback returns.
-It blocks the dispatching.
+正如上面所说的， `invoke` 是同步的。
+Mutiny调用回调并且在这个回调返回时继续把事件传播到下游。
+它会阻塞事件的分配。
 
 [role=reduce]
 image::event-invoke.png[]
 
-Of course, we highly recommend you not to block.
+当然，我们非常推荐您不要阻塞事件分配
 
-The following snippets show how you can log the different types of events.
-
+以下代码段显示了如何记录不同类型的事件。
 
 [source, java, indent=0]
 ----
 include::{include_dir}/ObserveTest.java[tag=invoke-all]
 ----
 
-The arrows from the previous code snippet indicate if the event comes from the upstream (source) or downstream (consumer) (see the table above for more details).
-The `invoke` method does not change the event, except in one case.
-If the callback throws an exception, the downstream does not get the actual event but get a failure event instead.
+前面代码段中的箭头指示事件是来自上游（源）还是下游（使用者）（有关更多详细信息，请参见上表）。
+invoke方法不会更改事件，只有一种情况除外。
+如果回调抛出异常，则下游不会获取实际事件，而是获取失败事件。
 
-When observing the failure event, if the callback throws an exception, Mutiny propagates a `CompositeException` aggregating the original failure and the callback failure.
+当观测失败事件时，如果回调抛出了一个异常，Mutiny将原异常和回调产生的异常聚合起来传播一个 `CompositeException` 
 
-== The call method
+== call方法
 
-Unlike `invoke`, `call` is asynchronous, and the callback returns a `Uni<?>` object.
+与 `invoke` 不同，`call` 是异步的，而且其回调是返回一个 `Uni<?>` 对象的
 
-`call` is often used when you need to implement asynchronous side-effects, such as closing resources.
+当您需要实现异步副作用，比如关闭资源时，通常使用 `call` 。
 
 [role=reduce]
 image::event-call.png[]
 
-Mutiny does not dispatch the original event downstream until the Uni returned by the callback emits an item:
+Mutiny在回调返回的Uni发射事件之前不会将原事件分配到下游：
 
 [source, java, indent=0]
 ----
 include::{include_dir}/ObserveTest.java[tag=call]
 ----
 
-As shown in the previous snippet, you can use this approach to delay items.
-But, the primary use case is about completing asynchronous actions such as calling an asynchronous `close` method on a resource:
+如前一段所示，您可以使用此方法延迟元素传播。
+但是，主要用处是完成异步操作，例如对资源调用异步关闭方法：
 
 [source, java, indent=0]
 ----
 include::{include_dir}/ObserveTest.java[tag=close]
 ----
 
-Under the hood, Mutiny gets the `Uni` (by invoking the callback) and subscribes to it.
-It observes the item or failure event from that Uni.
-It discards the item value as only the emission matters in this case.
+在幕后，Mutiny获取到这个 `Uni` (通过触发回调),并且订阅它。
+它观测Uni产生的元素或者失败事件。
+当只关心是否发射时，它将丢弃产生的元素。
 
-If the callback throws an exception or the produced `Uni` produces a failure, Mutiny propagates that failure (or a `CompositeException`) downstream, replacing the original event.
+如果回调抛出一个异常或者产生的 `Uni` 会产生一个失败，Mutiny则会传播这个失败事件（或者 `CompositeException`）到下游，用来取代原来的事件
 
-== Summary
 
-The `invoke` and `call` methods are handy when you need to observe a `Uni` or a `Multi` without changing the transiting events.
-Use `invoke` for implementing synchronous side-effects or logging events.
-The asynchronous nature of `call` makes it perfect for implementing asynchronous side-effects, such as closing resources, flushing data, delay items, and so on.
+== 总结
 
-The following table highlights the key differences:
+当您需要观测 `Uni` 或者 `Multi` 而不想改变传递的事件时，`invoke` 和 `call` 方法非常方便。
+使用 `invoke` 实现同步副作用或记录事件。
+`call` 的异步特性使其非常适合实现异步副作用，例如关闭资源、刷新数据、延迟项等
+
+下表是这两种的区别
 
 [cols="30, 30, 30", options="header"]
 |===
 |  | `invoke` | `call`
-| **Nature** | synchronous | asynchronous
-| **Return type** | `void`| `Uni<?>`
-| **Main Use cases** | logging, synchronous side-effect | closing resources, flushing data
+| **特性** | 同步 | 异步
+| **返回值** | `void`| `Uni<?>`
+| **主要用处** | 记录，同步副作用 | 关闭资源，刷新数据
 |===
 
